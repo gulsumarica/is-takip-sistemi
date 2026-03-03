@@ -35,7 +35,7 @@ const handleTimeEntrySubmit = (payload) => {
             showTimeEntryModal.value = false; 
             pendingCompletedTask.value = null;
             
-            // UX Kuralı: İş bitirildiğinde konfeti patlat (Gamification) [cite: 279, 445]
+            // UX kuralı: İş bitirildiğinde konfeti patlat (gamification)
             triggerConfetti();
         },
         preserveScroll: true,
@@ -49,7 +49,7 @@ const triggerConfetti = () => {
         particleCount: 150,
         spread: 70,
         origin: { y: 0.6 },
-        // Dokümandaki renk paletine uygun: Başarı Yeşili, Gri/Mavi Enerji, Turuncu Dinamizm [cite: 21, 254, 255]
+        // Dokümandaki renk paletine uygun: başarı yeşili, gri/mavi enerji, turuncu dinamizm
         colors: ['#10B981', '#475569', '#F59E0B'], 
         disableForReducedMotion: true // Erişilebilirlik (A11y) kuralı
     });

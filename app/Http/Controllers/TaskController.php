@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TaskStatus;
 use App\Models\Task;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
+use Inertia\Inertia;
+use Inertia\Response;
 use App\Actions\Task\CompleteTaskAction;
 
 class TaskController extends Controller
@@ -13,7 +17,7 @@ class TaskController extends Controller
     /**
      * Kanban panosunu ve görevleri listele
      */
-    public function index()
+    public function index(): Response
     {
         // Sadece giriş yapan kullanıcıya atanan veya onun açtığı görevleri getiriyoruz
         // (İleride rol bazlı filtreleme buraya eklenebilir)
@@ -24,7 +28,7 @@ class TaskController extends Controller
                 return [
                     'id' => $task->id,
                     'title' => $task->title,
-                    'status' => $task->status,
+                    'status' => $task->status->value,
                     'priority' => $task->priority,
                     'priority_label' => ucfirst($task->priority),
                     'project_id' => $task->ticket->project_id ?? 'N/A',
@@ -44,14 +48,16 @@ class TaskController extends Controller
     /**
      * Görevin durumunu güncelle (Sürükle-Bırak sonrası)
      */
-    public function updateStatus(Request $request, Task $task)
+    public function updateStatus(Request $request, Task $task): RedirectResponse
     {
+        $this->authorize('update', $task);
+
         $request->validate([
-            'status' => 'required|in:todo,in_progress,testing,done'
+            'status' => ['required', Rule::enum(TaskStatus::class)],
         ]);
 
         $task->update([
-            'status' => $request->status
+            'status' => TaskStatus::from($request->status),
         ]);
 
         return back()->with('success', 'Görev durumu güncellendi.');
@@ -60,18 +66,19 @@ class TaskController extends Controller
     /**
      * Zaman kaydı girişi ve görevi tamamlama
      */
-    public function logTime(Request $request, Task $task)
+    public function logTime(Request $request, Task $task): RedirectResponse
     {
+        $this->authorize('update', $task);
+
         $validated = $request->validate([
             'time_spent_minutes' => 'required|integer|min:1',
             'note' => 'nullable|string',
             'is_public' => 'required|boolean'
         ]);
 
-        // Zamanı kaydet ve durumu 'done' yap
         $task->update([
             'time_spent_minutes' => $task->time_spent_minutes + $validated['time_spent_minutes'],
-            'status' => 'done'
+            'status' => TaskStatus::DONE,
         ]);
 
         // İleride burada 'comments' tablosuna not eklenebilir
@@ -79,14 +86,16 @@ class TaskController extends Controller
         return back()->with('success', 'Zaman kaydı başarıyla işlendi! 🎉');
     }
 
-    public function complete(Request $request, Task $task, CompleteTaskAction $completeTaskAction)
+    public function complete(Request $request, Task $task, CompleteTaskAction $completeTaskAction): RedirectResponse
     {
-        // 1. Validasyon (Form Request de kullanılabilir) [cite: 158]
+        $this->authorize('update', $task);
+
+        // 1. Validasyon (Form Request de kullanılabilir)
         $validatedData = $request->validate([
             'time_spent_minutes' => ['required', 'integer', 'min:1']
         ]);
 
-        // 2. İşi Action sınıfına devret (Asıl iş mantığı) [cite: 140, 159]
+        // 2. İşi Action sınıfına devret (asıl iş mantığı)
         $completeTaskAction->execute($task, $validatedData, auth()->user());
 
         // 3. Vue tarafına (Inertia) başarılı yanıt dön 

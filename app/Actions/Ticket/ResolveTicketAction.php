@@ -10,7 +10,7 @@ class ResolveTicketAction
     /**
      * Talebi çözer, müşteri memnuniyet puanını ve kapanış zamanını kaydeder.
      */
-    public function execute(Ticket $ticket, ?int $csatScore): Ticket
+    public function execute(Ticket $ticket, int $csatScore): Ticket
     {
         $ticket->update([
             'status' => TicketStatus::RESOLVED,

@@ -1,10 +1,11 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
+import confetti from 'canvas-confetti';
 
 const props = defineProps({
     show: Boolean,
-    ticket: Object
+    ticket: Object,
 });
 
 const emit = defineEmits(['close']);
@@ -18,29 +19,48 @@ const emojis = [
     { score: 2, icon: '🙁', label: 'Kötü', color: 'bg-orange-50 text-orange-600 hover:bg-orange-100 border-orange-200' },
     { score: 3, icon: '😐', label: 'Normal', color: 'bg-amber-50 text-amber-600 hover:bg-amber-100 border-amber-200' },
     { score: 4, icon: '🙂', label: 'İyi', color: 'bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200' },
-    { score: 5, icon: '🤩', label: 'Harika', color: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200' }
+    { score: 5, icon: '🤩', label: 'Harika', color: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200' },
 ];
 
-watch(() => props.show, (newVal) => {
-    if (newVal) selectedScore.value = null; // Modal açıldığında seçimi sıfırla
-});
+watch(
+    () => props.show,
+    (newVal) => {
+        if (newVal) {
+            selectedScore.value = null;
+        }
+    },
+);
+
+const fireConfetti = () => {
+    confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#4f46e5', '#6366f1', '#22c55e', '#0ea5e9'],
+    });
+};
 
 const submitSurvey = () => {
     if (!selectedScore.value || !props.ticket) return;
-    
+
     isSubmitting.value = true;
-    
-    // Backend'e puanı gönder ve talebi kapat
-    router.put(route('tickets.resolve', props.ticket.id), {
-        csat_score: selectedScore.value
-    }, {
-        onSuccess: () => {
-            emit('close');
-            // Burada da ufak bir konfeti patlatabiliriz!
+
+    router.put(
+        route('tickets.csat', props.ticket.id),
+        {
+            csat_score: selectedScore.value,
         },
-        onFinish: () => { isSubmitting.value = false; },
-        preserveScroll: true
-    });
+        {
+            onSuccess: () => {
+                fireConfetti();
+                emit('close');
+            },
+            onFinish: () => {
+                isSubmitting.value = false;
+            },
+            preserveScroll: true,
+        },
+    );
 };
 </script>
 

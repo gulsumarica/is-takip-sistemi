@@ -2,6 +2,7 @@
 
 namespace App\Actions\Task;
 
+use App\Enums\TaskStatus;
 use App\Models\Task;
 use App\Models\User;
 
@@ -12,14 +13,13 @@ class CompleteTaskAction
      */
     public function execute(Task $task, array $data, User $developer): Task
     {
-        // Veritabanı mimarisinde belirttiğimiz 'done' durumu ve süre kaydı 
         $task->update([
-            'status' => 'done',
+            'status' => TaskStatus::DONE,
             'time_spent_minutes' => $data['time_spent_minutes'] ?? 0,
         ]);
 
         // Gelecek vizyonu: Eğer bu görev, bağlı olduğu Ticket'ın SON göreviyse,
-        // burada NotificationService çağrılıp müşteriye "Talebiniz test ediliyor" maili atılabilir[cite: 176, 211].
+        // burada NotificationService çağrılıp müşteriye "Talebiniz test ediliyor" maili atılabilir.
 
         return $task;
     }
